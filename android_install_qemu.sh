@@ -1,46 +1,46 @@
 #!/bin/bash
 
-local isoname="$1"
-local android_dir="$2"
-local size="{$3:-8G}"
+isoname="$1"
+android_dir="$2"
+size=${3:-8G}
 
-local iso_mount=/tmp/iso_mount-${uuidgen}
-local android_mount=/tmp/android-x86-${uuidgen}
+iso_mount=/tmp/iso_mount-$(uuidgen)
+android_mount=/tmp/android_x86-$(uuidgen)
 mkdir $iso_mount
 
 echo "mount ISO ${iso_mount}.."
-mount -o loop "$isoname" $iso_mount && echo -n ". success"
+mount -o loop "$isoname" $iso_mount && echo -n ". "
 
-echo "copy kernel initrd.img.."
+echo -n "copy kernel initrd.img.."
 mkdir -p "$android_dir"
-cp $iso_mount/kernel $iso_mount/initrd.img "$android_dir" && echo -n ". success"
+cp $iso_mount/kernel $iso_mount/initrd.img "$android_dir" && echo -n "."
 
 echo "creating android.img ${size}.."
-qemu-img create -f raw "$android_dir"/android.img -s $size && echo -n ". success"
+qemu-img create -f raw "$android_dir"/android.img -s $size && echo -n ". "
 
-echo "mkfs.ext4 android.img.."
-mkfs.ext4 "$android_dir"/android.img &>/dev/null && echo -n ". success"
+echo -n "mkfs.ext4 android.img.."
+mkfs.ext4 "$android_dir"/android.img &>/dev/null && echo -n "."
 
 echo "mount android.img.."
 mkdir $android_mount
-mount -o loop android.img $android_mount && echo -n ". success"
+mount -o loop android.img $android_mount && echo -n ". "
 
-echo "create /data /system.."
-mkdir -p $android_mount/data $android_mount/system && echo -n ". success"
+echo -n "create /data /system.."
+mkdir -p $android_mount/data $android_mount/system && echo -n "."
 
-cp $iso_mount/ramdisk.img $iso_mount/gearlock $android_mount &>/dev/null
+cp $iso_mount/ramdisk.img $iso_mount/gearlock $android_mount &>/dev/null && echo "gearlock found.."
 
-echo "mount system.sfs / system.img.."
-mount -o loop $iso_mount/system.sfs $iso_mount
-echo -n .
-mount -o loop $iso_mount/system.img $iso_mount && echo -n ". success"
+echo "mount system.sfs.."
+mount -o loop $iso_mount/system.sfs $iso_mount && echo -n ". "
+echo -n "mount system.img.."
+mount -o loop $iso_mount/system.img $iso_mount && echo -n .
 
 echo "copy /system.. please wait"
-cp -a -Z $iso_mount $android_mount/system && echo -n ".. success"
+cp -a -Z $iso_mount $android_mount/system && echo -n ".. done"
 
-echo "cleanup"
+echo "cleanup.."
 umount $iso_mount; umount $iso_mount; umount $iso_mount;
-umount $android_mount; losetup -D; rm -r $android_mount $iso_mount && echo -n ".. success"
+umount $android_mount; losetup -D; rm -r $android_mount $iso_mount && echo -n "."
 
 
 android_dir=\""$android_dir"\"
