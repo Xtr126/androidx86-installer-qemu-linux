@@ -35,11 +35,12 @@ mount -o loop $iso_mount/system.sfs $iso_mount
 echo -n "copy system.img.. please wait"
 cp $iso_mount/system.img $android_mount/system.img && echo ".. done"
 
-echo -n "cleanup.. "
+echo "cleanup.. "
 echo -n "unmounting filesystems: "
-umount $iso_mount; umount $iso_mount; echo "done"
-echo -n "syncing to disk.. " && sync && echo "done"
-umount $android_mount; losetup -D; rm -r $android_mount $iso_mount
+umount $iso_mount && umount $iso_mount && rm -rf $iso_mount && echo "done" || echo "error: umount $iso_mount failed"
+echo -n "syncing to disk: " && sync && echo "done"
+umount $android_mount && rm -rf $android_mount || echo "error: umount $android_mount failed"
+losetup -D
 
 
 android_dir=\""$android_dir"\"
