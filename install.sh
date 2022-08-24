@@ -4,6 +4,24 @@ isoname="$1"
 android_dir="$2"
 size=${3:-8G}
 
+
+if [ "$(id -u)" != "0" ]
+then
+	echo "error: script has not been run with root privileges, it may not work."
+	echo "You need to be root to run this script or sudo."
+	echo "Press any key to ignore and continue"
+    x=3
+	while true; do
+      echo -en " exiting in $x seconds\r"
+	  read -n 1 -t 1 breakvar && break
+
+      let x=x-1
+
+      test $x = 0 && echo -n "exiting in $x seconds" && exit 1
+    done
+
+fi
+
 iso_mount=/tmp/iso_mount-$(uuidgen)
 android_mount=/tmp/android_x86-$(uuidgen)
 mkdir $iso_mount
@@ -27,19 +45,22 @@ echo -n "create /data.."
 mkdir -p $android_mount/data && echo "."
 
 cp $iso_mount/ramdisk.img $android_mount &>/dev/null
-cp $iso_mount/gearlock $android_mount &>/dev/null && echo "gearlock found..\n creating nosc file to tell gearlock not to touch our system.img" && touch $android_mount/nosc
+cp $iso_mount/gearlock $android_mount &>/dev/null && \
+echo "gearlock found: attempt to disable gearlock supercharge function" && \
+touch $android_mount/nosc
 
 echo -n "mount system.sfs.. "
 mount -o loop $iso_mount/system.sfs $iso_mount
 
 echo -n "copy system.img.. please wait"
-cp $iso_mount/system.img $android_mount/system.img && echo ".. done"
+cp $iso_mount/system.img $android_mount/system.img && echo ".. done" ||\ 
+echo -e "\n failed to copy system.img"
 
 echo "cleanup.. "
 echo -n "unmounting filesystems: "
-umount $iso_mount && umount $iso_mount && rm -rf $iso_mount && echo "done" || echo "error: umount $iso_mount failed"
+umount $iso_mount && umount $iso_mount && rm -rf $iso_mount && echo "done" || echo "error: umount $iso_mount failed, manually remove it"
 echo -n "syncing to disk: " && sync && echo "done"
-umount $android_mount && rm -rf $android_mount || echo "error: umount $android_mount failed"
+umount $android_mount && rm -rf $android_mount || echo "error: umount $android_mount failed, manually remove it"
 losetup -D
 
 
