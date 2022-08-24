@@ -22,6 +22,7 @@ help_usage()
 	echo "-d, --destination (path)	Directory to install android files into"
 	echo "-s (size), --size (size) size in GB (default=8)"
 	echo "-h, --help"
+  exit 1
 }
 
 if [ $# -eq 0 ]; then
@@ -43,10 +44,11 @@ while [ $# -gt 0 ]; do
         size=$1
         ;;
         -h | --help)
-        help_usage; exit 0
+        help_usage
         ;;
         *)
-        echo "invalid argument"; help_usage; exit 1
+        echo "error: invalid argument"
+        help_usage
     esac
     shift
 done
@@ -54,10 +56,10 @@ done
 [ ! -f "$isoname" ] && echo "error: ${1:-iso_file} not found, try --help" && exit 1
 [ -z "$android_dir" ] && echo "error: android install dir not specified, try --help" && exit 1
 
-if [ -z "size" ]; then
-  echo "size not specified, defaulting to 8G"; size=8G
+if [ -z $size ]; then
+  echo "size not specified, defaulting to 8GB"; size=8
 else
-  [ -z "${size##*[!0-9]*}" ] && echo "size is not numeric" && exit 1
+  [ -z "${size##*[!0-9]*}" ] && echo "error: size is not numeric" && exit 1
 fi
 
 iso_mount=/tmp/iso_mount-$(uuidgen)
@@ -81,7 +83,7 @@ echo -n "copy kernel initrd.img.."
 mkdir -p "$android_dir"
 cp $iso_mount/kernel $iso_mount/initrd.img "$android_dir" && echo "."
 
-echo -n "creating android.img ${size}.. "
+echo -n "creating android.img.. "
 qemu-img create -f raw "$android_dir"/android.img ${size}G || truncate -s ${size}G "$android_dir"/android.img
 mkfs.ext4 "$android_dir"/android.img
 
@@ -99,18 +101,18 @@ touch $android_mount/nosc
 echo -n "mount system.sfs.. "
 mount -o loop $iso_mount/system.sfs $iso_mount
 
-echo -n "copy system.img.. please wait"
-dd if=$iso_mount/system.img of=$android_mount/system.img status=progress && echo ".. done"
+echo "copy system.img.. please wait"
+dd if=$iso_mount/system.img of=$android_mount/system.img status=progress
 
 echo "cleanup.. "
-echo -n "unmounting filesystems: "
-umount $iso_mount && umount $iso_mount && rm -rf $iso_mount && echo "done" || echo "error: umount $iso_mount failed, manually remove it"
 echo -n "syncing to disk: " && sync && echo "done"
+echo -n "unmounting filesystems: "
 umount $android_mount && rm -rf $android_mount || echo "error: umount $android_mount failed, manually remove it"
+umount $iso_mount && umount $iso_mount && rm -rf $iso_mount && echo "done" || echo "error: umount $iso_mount failed, manually remove it"
 losetup -D
 
 
-android_dir=\""$android_dir"\"
+android_dir=\""$(cd "$android_dir" && pwd)"\"
 echo "
 qemu-system-x86_64 -enable-kvm -cpu host -smp 2 -m 2G \\
                 -drive file="$android_dir"/android.img,format=raw,cache=none,if=virtio \\
