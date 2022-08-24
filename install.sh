@@ -57,8 +57,7 @@ done
 if [ -z "size" ]; then
   echo "size not specified, defaulting to 8G"; size=8G
 else
-  [ ! -z "${size##*[!0-9]*}" ] && \
-  echo "size is not numeric" && exit 1
+  [ -z "${size##*[!0-9]*}" ] && echo "size is not numeric" && exit 1
 fi
 
 iso_mount=/tmp/iso_mount-$(uuidgen)
@@ -66,10 +65,12 @@ android_mount=/tmp/android_x86-$(uuidgen)
 mkdir $iso_mount $android_mount
 
 mount_and_verify_iso(){
-  local files_list=( kernel initrd.img system.sfs )
-  mount -o loop,ro "$1" $2 || echo "error: mount failed: invalid iso file" && exit 1
+  files_list=( kernel initrd.img system.sfs )
+  mount -o loop "$1" $2
   for file in ${files_list[@]}; do
-    test -f $iso_mount/$file || echo "error: $file not found: incompatible iso file" && exit 1
+    if [ ! -f $2/$file ]; then 
+    echo "error: $file not found: incompatible iso" && exit 1
+    fi
   done
 }
 
@@ -99,8 +100,7 @@ echo -n "mount system.sfs.. "
 mount -o loop $iso_mount/system.sfs $iso_mount
 
 echo -n "copy system.img.. please wait"
-cp $iso_mount/system.img $android_mount/system.img && echo ".. done" ||\ 
-echo -e "\n failed to copy system.img"
+dd if=$iso_mount/system.img of=$android_mount/system.img status=progress && echo ".. done"
 
 echo "cleanup.. "
 echo -n "unmounting filesystems: "
