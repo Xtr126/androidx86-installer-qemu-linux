@@ -121,7 +121,8 @@ qemu-system-x86_64 -enable-kvm -cpu host -smp 2 -m 2G \\
                 -net nic,model=virtio-net-pci -net user,hostfwd=tcp::5555-:5555 \\
                 -machine vmport=off -machine q35 \\
                 -device virtio-tablet-pci -device virtio-keyboard-pci \\
-                -kernel "$android_dir"/kernel -append \""root=/dev/ram0 quiet SRC=/ GRALLOC=gbm video=1280x720"\" \\
+                -serial mon:stdio \\
+                -kernel "$android_dir"/kernel -append \""root=/dev/ram0 quiet SRC=/ GRALLOC=gbm video=1280x720 console=ttyS0"\" \\
                 -initrd "$android_dir"/initrd.img
                          "
 
