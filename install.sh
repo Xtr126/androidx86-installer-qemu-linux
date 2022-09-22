@@ -122,7 +122,7 @@ qemu-system-x86_64 -enable-kvm -cpu host -smp 2 -m 2G \\
                 -machine vmport=off -machine q35 \\
                 -device virtio-tablet-pci -device virtio-keyboard-pci \\
                 -serial mon:stdio \\
-                -kernel "$android_dir"/kernel -append \""root=/dev/ram0 quiet SRC=/ GRALLOC=gbm video=1280x720 console=ttyS0"\" \\
+                -kernel "$android_dir"/kernel -append \""root=/dev/ram0 quiet SRC=/ video=1280x720 console=ttyS0"\" \\
                 -initrd "$android_dir"/initrd.img
                          "
 
