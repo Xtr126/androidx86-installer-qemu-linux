@@ -21,6 +21,7 @@ help_usage()
 	echo "-i (iso), --isofile (iso)	Android-x86 ISO file"
 	echo "-d, --destination (path)	Directory to install android files into"
 	echo "-s (size), --size (size) size in GB (default=8)"
+	echo "--extract-system-to-dir  Extract system.img and copy contents"
 	echo "-h, --help"
   exit 1
 }
@@ -42,6 +43,10 @@ while [ $# -gt 0 ]; do
         -s | --size)
         shift
         size=$1
+        ;;
+        --extract-system-to-dir)
+        shift
+        extract_system=1
         ;;
         -h | --help)
         help_usage
@@ -101,16 +106,27 @@ touch $android_mount/nosc
 echo -n "mount system.sfs.. "
 mount -o loop $iso_mount/system.sfs $iso_mount
 
-echo "copy system.img.. please wait"
-dd if=$iso_mount/system.img of=$android_mount/system.img status=progress
+if [ -z $extract_system ]; then
+  echo "copy system.img.. please wait"
+  dd if=$iso_mount/system.img of=$android_mount/system.img status=progress
+else
+  echo -n "mount system.img.. "
+  system_mount_dir=/tmp/system_$(uuidgen)
+  mkdir $system_mount_dir
+  mount -o loop $iso_mount/system.img $system_mount_dir && echo "done"
+
+  echo "extracting system.img.. please wait"
+  echo "this might take a while"
+  cp -a -Z $system_mount_dir $android_mount/system
+fi
 
 echo "cleanup.. "
 echo -n "syncing to disk: " && sync && echo "done"
 echo -n "unmounting filesystems: "
 umount $android_mount && rm -rf $android_mount || echo "error: umount $android_mount failed, manually remove it"
+[ ! -z $system_mount_dir ] && umount $system_mount_dir && rm -rf $system_mount_dir
 umount $iso_mount && umount $iso_mount && rm -rf $iso_mount && echo "done" || echo "error: umount $iso_mount failed, manually remove it"
 losetup -D
-
 
 android_dir=\""$(cd "$android_dir" && pwd)"\"
 echo "
