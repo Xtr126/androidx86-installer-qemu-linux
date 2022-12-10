@@ -8,7 +8,7 @@ then
     x=3
 	while true; do
       echo -en " exiting in $x seconds\r"
-	  read -n 1 -t 1 breakvar && break
+	    read -n 1 -t 1 breakvar && break
       let x=x-1
       test $x = 0 && echo -n "exiting in $x seconds" && exit 1
     done
@@ -16,13 +16,18 @@ fi
 
 help_usage()
 {
-	echo ""
-	echo "install.sh [-s X] -i android_iso_path -d android_install_dir"
-	echo "-i (iso), --isofile (iso)	Android-x86 ISO file"
-	echo "-d, --destination (path)	Directory to install android files into"
-	echo "-s (size), --size (size) size in GB (default=8)"
-	echo "--extract-system-to-dir  Extract system.img and copy contents"
-	echo "-h, --help"
+  cat <<- EOF
+
+		Usage: ${0##*/} [-s X] -i android_iso_path -d android_install_dir
+
+    Options:
+      -i, --isofile (iso)       Android-x86 ISO file
+      -d, --destination (path)  Directory to install android files into
+      -s, --size (size)         Size in GB (default=8)
+          --extract-system      Extract system.img and copy contents
+      -h, --help                Display this message and exit
+
+		EOF
   exit 1
 }
 
@@ -44,7 +49,7 @@ while [ $# -gt 0 ]; do
         shift
         size=$1
         ;;
-        --extract-system-to-dir)
+        --extract-system)
         shift
         extract_system=1
         ;;
