@@ -1,35 +1,32 @@
 #!/bin/bash
 
-if [ "$(id -u)" != "0" ]
-then
-	echo "error: script has not been run with root privileges, it may not work."
-	echo "try to run with sudo"
-	echo "Press any key to ignore and continue"
-    x=3
-	while true; do
-      echo -en " exiting in $x seconds\r"
-	    read -n 1 -t 1 breakvar && break
-      let x=x-1
-      test $x = 0 && echo -n "exiting in $x seconds" && exit 1
-    done
+if [ "$(id -u)" != "0" ]; then
+  echo "error: script has not been run with root privileges, it may not work."
+  echo "try to run with sudo"
+  echo "Press any key to ignore and continue"
+  x=3
+  while true; do
+  echo -en " exiting in $x seconds\r"
+  read -n 1 -t 1 breakvar && break
+  let x=x-1
+  test $x = 0 && echo -n "exiting in $x seconds" && exit 1
+  done
 fi
 
 help_usage()
 {
-  cat <<- EOF
+cat <<- EOF
+  Usage: ${0##*/} [-s X] -i android_iso_path -d android_install_dir
 
-		Usage: ${0##*/} [-s X] -i android_iso_path -d android_install_dir
-
-    Options:
-      -i, --isofile (iso)       Android-x86 ISO file
-      -d, --destination (path)  Directory to install android files into
-      -s, --size (size)         Size in GB (default=8)
-          --rw-system           Extract system.img from system.sfs 
-          --extract-system      Extract system.img and copy contents
-      -h, --help                Display this message and exit
-
-		EOF
-  exit 1
+  Options:
+    -i, --isofile (iso)       Android-x86 ISO file
+    -d, --destination (path)  Directory to install android files into
+    -s, --size (size)         Size in GB (default=8)
+        --rw-system           Extract system.img from system.sfs 
+        --extract-system      Extract system.img and copy contents
+    -h, --help                Display this message and exit
+EOF
+exit 1
 }
 
 set_color(){
@@ -41,15 +38,15 @@ set_color(){
   local color=$1
   case "$color" in
     red)
-        echo -e "${RED}";;
+        echo -en "${RED}";;
     blue)
-        echo -e "${BLUE}";;
+        echo -en "${BLUE}";;
     green)
-        echo -e "${GREEN}";;
+        echo -en "${GREEN}";;
     yellow)
-        echo -e "${YELLOW}";;
+        echo -en "${YELLOW}";;
     *)
-        echo -e '\033[0m';;
+        echo -en '\033[0m';;
   esac
 }
 
@@ -100,9 +97,10 @@ cleanup() {
   error(){
     set_color red
     echo "error: umount $1 failed, manually remove it"
-    set_color null
+    set_color green
   }
 
+  set_color green
   echo "cleanup.. "
   echo -n "syncing to disk: " && sync && echo "done"
   echo -n "unmounting filesystems: "
@@ -114,6 +112,7 @@ cleanup() {
 
   umount $iso_mount && rm -rf $iso_mount && echo "done" || error $iso_mount
   losetup -D
+  set_color null
 }
 
 echo_err(){
@@ -157,7 +156,7 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-[ ! -f "$isoname" ] && echo_err "${1:-iso_file} not found, try --help" 
+[ ! -f "$isoname" ] && echo_err "file ${isoname:-iso_file} not found, try --help" 
 [ -z "$android_dir" ] && echo_err "android install dir not specified, try --help" 
 
 if [ -z $size ]; then
@@ -208,10 +207,12 @@ mount -o loop "$android_dir"/android.img $android_mount && echo "."
 echo -n "create /data.."
 mkdir -p $android_mount/data && echo "."
 
+set_color blue
 cp $iso_mount/ramdisk.img $android_mount &>/dev/null
 cp $iso_mount/gearlock $android_mount &>/dev/null && \
-echo "gearlock found: attempt to disable gearlock supercharge function" && \
+echo "gearlock found: force disabling supercharge" && \
 touch $android_mount/nosc
+set_color none
 
 if [ "${extract_system}" == yes ]; then
   extract_system_to_dir
@@ -245,4 +246,4 @@ qemu-system-x86_64 -enable-kvm -cpu host -smp 2 -m 2G \\
 set_color yellow
 echo "run sudo chown -hR "'$(whoami)' "$android_dir" "if permission denied"
 echo "script saved to ${script_name}"
-set_color none
+set_color null
