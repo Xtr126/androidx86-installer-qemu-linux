@@ -16,6 +16,7 @@ Options:
     -i, --isofile (iso)       Android-x86 ISO file
     -d, --destination (path)  Directory to install android files into
     -s, --size (size)         Size in GB (default=8)
+        --rw-system           Extract system.img from system.sfs 
         --extract-system      Extract system.img and copy contents
     -h, --help                Display this message and exit
 ```
