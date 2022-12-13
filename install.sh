@@ -32,6 +32,27 @@ help_usage()
   exit 1
 }
 
+set_color(){
+  RED='\033[0;31m'
+  GREEN='\033[0;32m'
+  YELLOW='\033[1;33m' 
+  BLUE='\033[0;34m' 
+
+  local color=$1
+  case "$color" in
+    red)
+        echo -e "${RED}";;
+    blue)
+        echo -e "${BLUE}";;
+    green)
+        echo -e "${GREEN}";;
+    yellow)
+        echo -e "${YELLOW}";;
+    *)
+        echo -e '\033[0m';;
+  esac
+}
+
 extract_system_to_dir(){
   system_mount_dir=/tmp/system_$(uuidgen)
   mkdir $system_mount_dir
@@ -77,7 +98,9 @@ check_if_system_img_exists(){
 
 cleanup() {
   error(){
+    set_color red
     echo "error: umount $1 failed, manually remove it"
+    set_color null
   }
 
   echo "cleanup.. "
@@ -93,8 +116,15 @@ cleanup() {
   losetup -D
 }
 
+echo_err(){
+  set_color red
+  echo "error: $1"
+  set_color null
+  exit 1
+}
+
 if [ $# -eq 0 ]; then
-help_usage
+  help_usage
 fi
 
 while [ $# -gt 0 ]; do
@@ -120,20 +150,22 @@ while [ $# -gt 0 ]; do
     -h | --help)
         help_usage ;;
     *)
-        echo "error: invalid argument"
+        set_color red; echo "error: invalid argument"; set_color null
         help_usage
         ;;
     esac
     shift
 done
 
-[ ! -f "$isoname" ] && echo "error: ${1:-iso_file} not found, try --help" && exit 1
-[ -z "$android_dir" ] && echo "error: android install dir not specified, try --help" && exit 1
+[ ! -f "$isoname" ] && echo_err "${1:-iso_file} not found, try --help" 
+[ -z "$android_dir" ] && echo_err "android install dir not specified, try --help" 
 
 if [ -z $size ]; then
-  echo "size not specified, defaulting to 8GB"; size=8
+  set_color yellow; echo "size not specified, defaulting to 8GB"; size=8; set_color null
 else
-  [ -z "${size##*[!0-9]*}" ] && echo "error: size is not numeric" && exit 1
+  set_color red
+  [ -z "${size##*[!0-9]*}" ] && echo_err "size is not numeric" 
+  set_color null
 fi
 
 iso_mount=/tmp/iso_mount-$(uuidgen)
@@ -149,13 +181,13 @@ mount_and_verify_iso(){
   files_list=( kernel initrd.img )
   for file in ${files_list[@]}; do
     if [ ! -f $dest/$file ]; then 
-      echo "error: $file not found: incompatible iso" && exit 1
+      echo_err "$file not found: incompatible iso" 
     fi
   done
 
   files=(system*); system_image="${files[0]}"
   if [ ! -f $dest/$system_image ]; then
-    echo "error: system.sfs or system.efs not found" && exit 1  
+    echo_err "system.sfs or system.efs not found" 
   fi
 }
 
@@ -196,6 +228,7 @@ echo '#!/bin/bash' > "$script_name"
 chmod a+x "$script_name"
 
 android_dir=\""$(cd "$android_dir" && pwd)"\"
+set_color blue
 echo "
 qemu-system-x86_64 -enable-kvm -cpu host -smp 2 -m 2G \\
                 -drive file="$android_dir"/android.img,format=raw,cache=none,if=virtio \\
@@ -209,5 +242,7 @@ qemu-system-x86_64 -enable-kvm -cpu host -smp 2 -m 2G \\
                 -initrd "$android_dir"/initrd.img
                          " | tee -a "$script_name"
 
+set_color yellow
 echo "run sudo chown -hR "'$(whoami)' "$android_dir" "if permission denied"
 echo "script saved to ${script_name}"
+set_color none
