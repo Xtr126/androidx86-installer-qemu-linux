@@ -59,7 +59,7 @@ extract_system_to_dir(){
 
   check_if_system_img_exists || return
 
-  echo -n "mount system.img.. "
+  echo -n "system.img.. "
   mount -o loop $system_mount_dir/system.img $system_mount_dir && echo "done"
 
   echo "extracting system.img.. please wait"
@@ -104,13 +104,19 @@ cleanup() {
   echo "cleanup.. "
   echo -n "syncing to disk: " && sync && echo "done"
   echo -n "unmounting filesystems: "
-  umount $android_mount && rm -rf $android_mount || error $android_mount 
+  
+  if [ -d "$android_mount" ]; then
+    umount $android_mount && rm -rf $android_mount || error $android_mount 
+  fi
 
-  if [ "$system_mount_dir" != "" ]; then
+  if [ -d "$system_mount_dir" ]; then
     umount $system_mount_dir && rm -rf $system_mount_dir || error $system_mount_dir 
   fi
 
-  umount $iso_mount && rm -rf $iso_mount && echo "done" || error $iso_mount
+  if [ -d "$iso_mount" ]; then
+    umount $iso_mount && rm -rf $iso_mount && echo "done" || error $iso_mount
+  fi
+
   losetup -D
   set_color null
 }
@@ -175,8 +181,8 @@ mount_and_verify_iso(){
   local iso="$1"
   local dest="$2"
   mount -o loop "$iso" "$dest"
-  cd $dest
 
+  cd $dest
   files_list=( kernel initrd.img )
   for file in ${files_list[@]}; do
     if [ ! -f $dest/$file ]; then 
@@ -185,13 +191,16 @@ mount_and_verify_iso(){
   done
 
   files=(system*); system_image="${files[0]}"
-  if [ ! -f $dest/$system_image ]; then
+  if [ ! -f $system_image ]; then
     echo_err "system.sfs or system.efs not found" 
   fi
+  cd -
 }
 
 echo "mount iso.."
 mount_and_verify_iso "$isoname" $iso_mount
+
+trap "cleanup" EXIT
 
 echo -n "copy kernel initrd.img.."
 mkdir -p "$android_dir"
@@ -204,7 +213,7 @@ mkfs.ext4 "$android_dir"/android.img
 echo -n "mount android.img.."
 mount -o loop "$android_dir"/android.img $android_mount && echo "."
 
-echo -n "create /data.."
+echo -n "create /data.."  
 mkdir -p $android_mount/data && echo "."
 
 set_color blue
@@ -221,8 +230,6 @@ elif [ "${rw_system}" == yes ]; then
 else
   copy_system_image
 fi
-
-cleanup
 
 script_name="$android_dir/start_android.sh"
 echo '#!/bin/bash' > "$script_name"
@@ -245,5 +252,5 @@ qemu-system-x86_64 -enable-kvm -cpu host -smp 2 -m 2G \\
 
 set_color yellow
 echo "run sudo chown -hR "'$(whoami)' "$android_dir" "if permission denied"
-echo "script saved to ${script_name}"
+echo "script written to ${script_name}"
 set_color null
