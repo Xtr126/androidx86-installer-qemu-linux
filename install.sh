@@ -183,16 +183,19 @@ mount_and_verify_iso(){
   mount -o loop "$iso" "$dest"
 
   cd $dest
-  files_list=( kernel initrd.img )
-  for file in ${files_list[@]}; do
-    if [ ! -f $dest/$file ]; then 
-      echo_err "$file not found: incompatible iso" 
-    fi
-  done
+  
+  if [ ! -f $dest/initrd.img ]; then 
+    echo_err "initrd.img not found: incompatible iso" 
+  fi
 
   files=(system*); system_image="${files[0]}"
   if [ ! -f $system_image ]; then
     echo_err "system.sfs or system.efs not found" 
+  fi
+  
+  kernels_=(kernel*); kernel_image="${kernels_[0]}"
+  if [ ! -f $kernel_image ]; then
+    echo_err "kernel not found: incompatible iso" 
   fi
   cd -
 }
@@ -204,7 +207,7 @@ trap "cleanup" EXIT
 
 echo -n "copy kernel initrd.img.."
 mkdir -p "$android_dir"
-cp $iso_mount/kernel $iso_mount/initrd.img "$android_dir" && echo "."
+cp $iso_mount/$kernel_image $iso_mount/initrd.img "$android_dir" && echo "."
 
 echo -n "creating android.img.. "
 qemu-img create -f raw "$android_dir"/android.img ${size}G || truncate -s ${size}G "$android_dir"/android.img
@@ -246,7 +249,7 @@ qemu-system-x86_64 -enable-kvm -cpu host -smp 2 -m 2G \\
                 -machine vmport=off -machine q35 \\
                 -device virtio-tablet-pci -device virtio-keyboard-pci \\
                 -serial mon:stdio \\
-                -kernel "$android_dir"/kernel -append \""root=/dev/ram0 quiet SRC=/ video=1280x720 console=ttyS0"\" \\
+                -kernel "$android_dir"/$kernel_image -append \""root=/dev/ram0 quiet SRC=/ video=1280x720 console=ttyS0"\" \\
                 -initrd "$android_dir"/initrd.img
                          " | tee -a "$script_name"
 
