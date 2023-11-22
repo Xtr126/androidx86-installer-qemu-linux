@@ -20,8 +20,8 @@ Options:
         --extract-system      Extract system.img and copy contents
     -h, --help                Display this message and exit
 ```
-
-After installation, you may refer to QEMU advanced configuration in BlissOS wiki or other resources for Audio support and other further optimizations/tweaks/settings applicable to Android running on QEMU, that are beyond the scope of this script.  
+An alternate version of this documentation is available here: https://xtr126.github.io/XtMapper-docs/blissos/quick_vm/  
+Refer to QEMU advanced configuration section in BlissOS wiki and/or other resources for Audio support and other further optimizations/tweaks/settings applicable to Android running on QEMU, that are beyond the scope of this script.  
 https://docs.blissos.org/installation/install-in-a-virtual-machine/advanced-qemu-config
 
 `--extract-system` might have problems with certain Android builds, do not use that option with
