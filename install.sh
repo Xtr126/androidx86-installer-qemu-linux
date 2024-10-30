@@ -243,13 +243,13 @@ set_color blue
 echo "
 qemu-system-x86_64 -enable-kvm -cpu host -smp 2 -m 2096 \\
                 -drive file="$android_dir"/android.img,format=raw,cache=none,if=virtio \\
-                -display sdl,gl=on,show-cursor=on \\
+                -display gtk,gl=es,show-cursor=on \\
                 -device virtio-vga-gl,xres=1280,yres=720 \\
                 -net nic,model=virtio-net-pci -net user,hostfwd=tcp::5555-:5555 \\
                 -machine vmport=off -machine q35 \\
                 -device virtio-tablet-pci -device virtio-keyboard-pci \\
                 -serial mon:stdio \\
-                -kernel "$android_dir"/$kernel_image -append \""root=/dev/ram0 quiet SRC=/ video=1280x720 console=ttyS0 VIRT_WIFI=1"\" \\
+                -kernel "$android_dir"/$kernel_image -append \""root=/dev/ram0 quiet SRC=/ console=ttyS0 androidboot.enable_console=1"\" \\
                 -initrd "$android_dir"/initrd.img
                          " | tee -a "$script_name"
 
